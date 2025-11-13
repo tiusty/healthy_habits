@@ -1,8 +1,8 @@
-import { ReceipeEatenEvent, Recipe } from '../types';
+import { ReceipeMadeEvent, Recipe } from '../types';
 
 interface RecipeDetailProps {
   recipe: Recipe;
-  receipeEatenEvents: ReceipeEatenEvent[];
+  receipeEatenEvents: ReceipeMadeEvent[];
   onClose: () => void;
   onDelete: () => void;
   onMarkAsEaten: () => void;

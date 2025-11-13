@@ -16,7 +16,7 @@ export interface Recipe {
   tags: string[];
 }
 
-export interface ReceipeEatenEvent {
+export interface ReceipeMadeEvent {
   recipeId: string;
   dateEaten: Date;
 }

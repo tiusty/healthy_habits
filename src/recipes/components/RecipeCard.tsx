@@ -1,8 +1,8 @@
-import { ReceipeEatenEvent, Recipe } from '../types';
+import { ReceipeMadeEvent, Recipe } from '../types';
 
 interface RecipeCardProps {
   recipe: Recipe;
-  receipeEatenEvents: ReceipeEatenEvent[];
+  receipeEatenEvents: ReceipeMadeEvent[];
   onClick: () => void;
 }
 

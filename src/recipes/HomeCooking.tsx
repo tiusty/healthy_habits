@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Recipe, RecipePreferences, ReceipeEatenEvent } from './types';
+import { Recipe, RecipePreferences, ReceipeMadeEvent } from './types';
 import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
@@ -26,7 +26,7 @@ export default function HomeCooking() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
-  const [receipeEatenEvents, setReceipeEatenEvents] = useState<ReceipeEatenEvent[]>(() => {
+  const [receipeEatenEvents, setReceipeEatenEvents] = useState<ReceipeMadeEvent[]>(() => {
     const savedReceipeEatenEvents = localStorage.getItem('receipeEatenEvents') || '[]';
     return JSON.parse(savedReceipeEatenEvents);
   });
