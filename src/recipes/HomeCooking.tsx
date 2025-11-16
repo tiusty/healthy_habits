@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Recipe, RecipePreferences, ReceipeMadeEvent } from './types';
+import { useEffect, useMemo, useState } from 'react';
+import { Recipe, RecipePreferences, ReceipeMadeEvent, WeeklyRecipePreferences } from './types';
 import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
@@ -23,6 +23,42 @@ export default function HomeCooking() {
   useEffect(() => {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   }, [preferences]);
+  const nextWeekSundayDate = useMemo(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToAdd = dayOfWeek === 0 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
+    const nextSunday = new Date(today);
+    nextSunday.setDate(today.getDate() + daysToAdd);
+    nextSunday.setHours(0, 0, 0, 0); // Set to start of day
+    return nextSunday;
+  }, []);
+  const [weeklyRecipePreferences, setWeeklyRecipePreferences] = useState<WeeklyRecipePreferences[]>(() => {
+    const savedWeeklyRecipePreferences = localStorage.getItem('weeklyRecipePreferences') || JSON.stringify([{ preferences: defaultPreferences, startDate: new Date(), endDate: new Date(nextWeekSundayDate.getDate()), accepted: false }]);
+    return JSON.parse(savedWeeklyRecipePreferences);
+  });
+  useEffect(() => {
+    localStorage.setItem('weeklyRecipePreferences', JSON.stringify(weeklyRecipePreferences));
+  }, [weeklyRecipePreferences]);
+
+  const currentWeeklyRecipePreferences = useMemo(() => {
+    const currentWeeklyRecipePreferences = weeklyRecipePreferences.find(preferences => preferences.startDate <= new Date() && preferences.endDate >= new Date());
+    if (!currentWeeklyRecipePreferences) {
+      const newWeeklyRecipePreferences = { preferences: defaultPreferences, startDate: new Date(), endDate: new Date(nextWeekSundayDate.getDate()), accepted: false };
+      setWeeklyRecipePreferences([...weeklyRecipePreferences, newWeeklyRecipePreferences]);
+      return newWeeklyRecipePreferences;
+    }
+    return currentWeeklyRecipePreferences;
+  }, [weeklyRecipePreferences]);
+  const nextWeekRecipePreferences = useMemo(() => {
+    const nextWeekRecipePreferences = weeklyRecipePreferences.find(preferences => preferences.startDate > new Date());
+    if (!nextWeekRecipePreferences) {
+      const newNextWeekRecipePreferences = { preferences: defaultPreferences, startDate: new Date(nextWeekSundayDate.getDate()), endDate: new Date(nextWeekSundayDate.getDate() + 7), accepted: false };
+      setWeeklyRecipePreferences([...weeklyRecipePreferences, newNextWeekRecipePreferences]);
+      return newNextWeekRecipePreferences;
+    }
+    return nextWeekRecipePreferences;
+  }, [weeklyRecipePreferences]);
+
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
