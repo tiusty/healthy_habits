@@ -5,7 +5,7 @@ interface PreferencesProps {
   preferences: RecipePreferences;
   onSave: (preferences: RecipePreferences) => void;
   recipes: Recipe[];
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
 export default function Preferences({ preferences, onSave, recipes, onCancel }: PreferencesProps) {
@@ -87,16 +87,9 @@ export default function Preferences({ preferences, onSave, recipes, onCancel }: 
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Recipe Preferences</h1>
-            <p className="text-gray-600">Customize your recipe recommendations and meal planning</p>
+            <p className="text-gray-600">This is your default weekly preferences. Your upcoming week preferences can be changed.</p>
           </div>
-          {onCancel && (
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300"
-            >
-              ← Back
-            </button>
-          )}
+          <button onClick={handleCancel} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300">← Back</button>
         </div>
 
         <div className="mb-6 flex justify-end gap-3">
