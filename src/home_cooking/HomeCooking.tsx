@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Recipe, RecipePreferences, ReceipeMadeEvent, WeeklyRecipePreferences } from './types';
-import { defaultPreferences } from './defaultPreferences';
+import { defaultPreferences } from './components/preferences/defaultPreferences';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
-import Preferences from './components/Preferences';
+import Preferences from './components/preferences/Preferences';
 import WeeklyPreferences from './components/WeeklyPreferences';
+import { calculateNextMonday } from './helpers';
 
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
@@ -24,15 +25,6 @@ export default function HomeCooking() {
   useEffect(() => {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   }, [preferences]);
-  // Helper function to calculate next Sunday from a given date
-  const calculateNextMonday = (fromDate: Date): Date => {
-    const dayOfWeek = fromDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const daysToAdd = dayOfWeek === 1 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
-    const nextSunday = new Date(fromDate);
-    nextSunday.setDate(fromDate.getDate() + daysToAdd);
-    nextSunday.setHours(0, 0, 0, 0); // Set to start of day
-    return nextSunday;
-  };
 
   // Helper function to parse dates from localStorage (dates are stored as ISO strings)
   const parseWeeklyPreferences = (saved: string): WeeklyRecipePreferences[] => {

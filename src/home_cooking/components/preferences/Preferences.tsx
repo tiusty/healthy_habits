@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RecipePreferences, Recipe, MealType, availableMealTypes, availableProteinTypes, ProteinType, DifficultyLevel, availableDifficultyLevels } from '../types';
+import { RecipePreferences, Recipe, MealType, availableMealTypes, availableProteinTypes, ProteinType, DifficultyLevel, availableDifficultyLevels } from '../../types';
 
 interface PreferencesProps {
   preferences: RecipePreferences;

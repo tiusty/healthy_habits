@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Preferences from './Preferences';
-import { RecipePreferences, Recipe } from '../types';
-import { defaultPreferences } from '../defaultPreferences';
+import { RecipePreferences, Recipe } from '../../types';
+import { defaultPreferences } from './defaultPreferences';
 
 // Mock window.confirm
 const mockConfirm = vi.fn();
