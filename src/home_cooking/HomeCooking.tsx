@@ -7,6 +7,7 @@ import AddRecipe from './components/AddRecipe';
 import WeeklyPreferences from './components/preferences/WeeklyPreferences';
 import { calculateNextMonday } from './helpers';
 import Preferences from './components/preferences/PreferencesEditor';
+import { generateRecipes } from './components/preferences/generateReceipes';
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
@@ -48,11 +49,23 @@ export default function HomeCooking() {
     today.setHours(0, 0, 0, 0);
     const nextMonday = calculateNextMonday(today);
     console.log('nextMonday', nextMonday);
-    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, accepted: false }];
+    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, generatedRecipes: [] }];
   });
 
   useEffect(() => {
     localStorage.setItem('weeklyRecipePreferences', JSON.stringify(weeklyRecipePreferences));
+  }, [weeklyRecipePreferences]);
+
+  const currentWeeklyRecipePreferences = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return weeklyRecipePreferences.find(wp => {
+      const start = new Date(wp.startDate);
+      const end = new Date(wp.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return start <= today && end >= today;
+    });
   }, [weeklyRecipePreferences]);
 
   // Variable that checks if upcoming recipe preferences exist, creates them if needed, and returns a reference
@@ -79,6 +92,7 @@ export default function HomeCooking() {
       preferences: defaultPreferences,
       startDate: nextMonday,
       endDate: nextMondayEnd,
+      generatedRecipes: [],
     };
 
     // Add to the list
@@ -86,6 +100,19 @@ export default function HomeCooking() {
     
     return newUpcomingPreferences;
   }, [weeklyRecipePreferences]);
+
+  useEffect(() => {
+    if (currentWeeklyRecipePreferences && currentWeeklyRecipePreferences.generatedRecipes.length === 0) {
+      const generatedRecipes = generateRecipes(currentWeeklyRecipePreferences, recipes);
+      const updated = weeklyRecipePreferences.map(wp => {
+        if (wp.startDate === currentWeeklyRecipePreferences.startDate && wp.endDate === currentWeeklyRecipePreferences.endDate) {
+          return { ...wp, generatedRecipes };
+        }
+        return wp;
+      });
+      setWeeklyRecipePreferences(updated);
+    }
+  }, [currentWeeklyRecipePreferences, recipes]);
 
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -108,7 +135,7 @@ export default function HomeCooking() {
     setCurrentView('home');
   };
 
-  const recipeOfTheWeek = recipes.length > 0 ? recipes[0] : null;
+
 
   const eatenRecipes = recipes.filter(r => receipeEatenEvents.some(event => event.recipeId === r.id));
 
@@ -279,47 +306,23 @@ export default function HomeCooking() {
           </button>
         </div>
 
-        {recipeOfTheWeek ? (
+        {currentWeeklyRecipePreferences && currentWeeklyRecipePreferences.generatedRecipes.length > 0 ? (
           <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Recipe of the Week</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Recipes for the Week</h2>
               <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                ⭐ Featured
+                {currentWeeklyRecipePreferences.generatedRecipes.length} {currentWeeklyRecipePreferences.generatedRecipes.length === 1 ? 'Recipe' : 'Recipes'}
               </span>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="md:flex">
-                <div className="md:w-1/2 p-8">
-                  <h3 className="text-3xl font-bold text-gray-900 mb-3">{recipeOfTheWeek.name}</h3>
-                  <p className="text-gray-600 mb-6">{recipeOfTheWeek.description}</p>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                      <div className="text-2xl font-bold text-indigo-700">{recipeOfTheWeek.prepTimeMinutes + recipeOfTheWeek.cookTimeMinutes}</div>
-                      <div className="text-sm text-indigo-600 mt-1">Minutes</div>
-                    </div>
-                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                      <div className="text-2xl font-bold text-indigo-700">{recipeOfTheWeek.numOfServings}</div>
-                      <div className="text-sm text-indigo-600 mt-1">Servings</div>
-                    </div>
-                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                      <div className="text-2xl font-bold text-indigo-700">{recipeOfTheWeek.difficulty}</div>
-                      <div className="text-sm text-indigo-600 mt-1">Difficulty</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleRecipeClick(recipeOfTheWeek)}
-                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg"
-                  >
-                    View Recipe →
-                  </button>
-                </div>
-                <div className="md:w-1/2 bg-indigo-500 flex items-center justify-center p-8">
-                  <div className="text-white text-center">
-                    <div className="text-6xl mb-4">🍳</div>
-                    <p className="text-xl font-semibold">Ready to Cook!</p>
-                  </div>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentWeeklyRecipePreferences.generatedRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  receipeEatenEvents={receipeEatenEvents}
+                  onClick={() => handleRecipeClick(recipe)}
+                />
+              ))}
             </div>
           </div>
         ) : (

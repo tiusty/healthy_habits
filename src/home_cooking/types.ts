@@ -49,6 +49,7 @@ export interface WeeklyRecipePreferences {
   preferences: RecipePreferences;
   startDate: Date; // The start date for the week that the preferences apply to.
   endDate: Date; // The end date for the week that the preferences apply to.
+  generatedRecipes: Recipe[]; // Recipes that have been generated for the week. This will only be generated once the weekly preferences are within the time range.
 }
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
