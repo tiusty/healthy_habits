@@ -4,7 +4,7 @@ import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
-import Preferences from './Preferences';
+import Preferences from './components/Preferences';
 import WeeklyPreferences from './components/WeeklyPreferences';
 
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
