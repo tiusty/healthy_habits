@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Recipe, RecipePreferences, ReceipeMadeEvent, WeeklyRecipePreferences } from './types';
-import { defaultPreferences } from './components/preferences/defaultPreferences';
+import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
-import WeeklyPreferences from './components/preferences/WeeklyPreferences';
-import { calculateNextMonday } from './helpers';
-import Preferences from './components/preferences/PreferencesEditor';
+import Preferences from './components/Preferences';
+import WeeklyPreferences from './components/WeeklyPreferences';
+
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
@@ -24,6 +24,15 @@ export default function HomeCooking() {
   useEffect(() => {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   }, [preferences]);
+  // Helper function to calculate next Sunday from a given date
+  const calculateNextMonday = (fromDate: Date): Date => {
+    const dayOfWeek = fromDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToAdd = dayOfWeek === 1 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
+    const nextSunday = new Date(fromDate);
+    nextSunday.setDate(fromDate.getDate() + daysToAdd);
+    nextSunday.setHours(0, 0, 0, 0); // Set to start of day
+    return nextSunday;
+  };
 
   // Helper function to parse dates from localStorage (dates are stored as ISO strings)
   const parseWeeklyPreferences = (saved: string): WeeklyRecipePreferences[] => {
@@ -47,8 +56,7 @@ export default function HomeCooking() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextMonday = calculateNextMonday(today);
-    console.log('nextMonday', nextMonday);
-    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, accepted: false }];
+    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday}];
   });
 
   useEffect(() => {
@@ -132,10 +140,8 @@ export default function HomeCooking() {
   if (currentView === 'preferences') {
     return (
       <Preferences
-        title="Recipe Preferences"
-        description="This is your default weekly preferences. Your upcoming week preferences can be changed."
         preferences={preferences}
-        onSave={(newPreferences: RecipePreferences) => {
+        onSave={(newPreferences) => {
           setPreferences(newPreferences);
           setCurrentView('home');
         }}
