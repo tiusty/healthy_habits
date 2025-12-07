@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Recipe, RecipePreferences, ReceipeMadeEvent, WeeklyRecipePreferences } from './types';
 import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
@@ -23,48 +23,113 @@ export default function HomeCooking() {
   useEffect(() => {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   }, [preferences]);
-  const nextWeekSundayDate = useMemo(() => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  // Helper function to calculate next Sunday from a given date
+  const calculateNextSunday = (fromDate: Date): Date => {
+    const dayOfWeek = fromDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const daysToAdd = dayOfWeek === 0 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
-    const nextSunday = new Date(today);
-    nextSunday.setDate(today.getDate() + daysToAdd);
+    const nextSunday = new Date(fromDate);
+    nextSunday.setDate(fromDate.getDate() + daysToAdd);
     nextSunday.setHours(0, 0, 0, 0); // Set to start of day
     return nextSunday;
-  }, []);
+  };
+
+  // Helper function to parse dates from localStorage (dates are stored as ISO strings)
+  const parseWeeklyPreferences = (saved: string): WeeklyRecipePreferences[] => {
+    const parsed = JSON.parse(saved);
+    return parsed.map((wp: any) => ({
+      ...wp,
+      startDate: new Date(wp.startDate),
+      endDate: new Date(wp.endDate),
+    }));
+  };
+
   const [weeklyRecipePreferences, setWeeklyRecipePreferences] = useState<WeeklyRecipePreferences[]>(() => {
-    const savedWeeklyRecipePreferences = localStorage.getItem('weeklyRecipePreferences') || JSON.stringify([{ preferences: defaultPreferences, startDate: new Date(), endDate: new Date(nextWeekSundayDate.getDate()), accepted: false }]);
-    return JSON.parse(savedWeeklyRecipePreferences);
+    const saved = localStorage.getItem('weeklyRecipePreferences');
+    if (saved) {
+      try {
+        return parseWeeklyPreferences(saved);
+      } catch {
+        // Fallback if parsing fails
+      }
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextSunday = calculateNextSunday(today);
+    return [{ preferences: defaultPreferences, startDate: today, endDate: nextSunday, accepted: false }];
   });
+
   useEffect(() => {
     localStorage.setItem('weeklyRecipePreferences', JSON.stringify(weeklyRecipePreferences));
   }, [weeklyRecipePreferences]);
 
-  const currentWeeklyRecipePreferences = useMemo(() => {
-    const currentWeeklyRecipePreferences = weeklyRecipePreferences.find(preferences => preferences.startDate <= new Date() && preferences.endDate >= new Date());
-    if (!currentWeeklyRecipePreferences) {
-      const newWeeklyRecipePreferences = { preferences: defaultPreferences, startDate: new Date(), endDate: new Date(nextWeekSundayDate.getDate()), accepted: false };
-      setWeeklyRecipePreferences([...weeklyRecipePreferences, newWeeklyRecipePreferences]);
-      return newWeeklyRecipePreferences;
+  // Initialize weekly preferences if needed - moved to useEffect to avoid infinite loops
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextSunday = calculateNextSunday(today);
+    const nextSundayEnd = new Date(nextSunday);
+    nextSundayEnd.setDate(nextSundayEnd.getDate() + 7);
+
+    let needsUpdate = false;
+    let updatedPreferences = [...weeklyRecipePreferences];
+
+    // Check if current week preferences exist
+    const currentExists = updatedPreferences.some(
+      wp => {
+        const start = new Date(wp.startDate);
+        const end = new Date(wp.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        return start <= today && end >= today;
+      }
+    );
+
+    if (!currentExists) {
+      updatedPreferences.push({
+        preferences: defaultPreferences,
+        startDate: today,
+        endDate: nextSunday,
+        accepted: false,
+      });
+      needsUpdate = true;
     }
-    return currentWeeklyRecipePreferences;
-  }, [weeklyRecipePreferences]);
-  const nextWeekRecipePreferences = useMemo(() => {
-    const nextWeekRecipePreferences = weeklyRecipePreferences.find(preferences => preferences.startDate > new Date());
-    if (!nextWeekRecipePreferences) {
-      const newNextWeekRecipePreferences = { preferences: defaultPreferences, startDate: new Date(nextWeekSundayDate.getDate()), endDate: new Date(nextWeekSundayDate.getDate() + 7), accepted: false };
-      setWeeklyRecipePreferences([...weeklyRecipePreferences, newNextWeekRecipePreferences]);
-      return newNextWeekRecipePreferences;
+
+    // Check if next week preferences exist
+    const nextWeekExists = updatedPreferences.some(
+      wp => {
+        const start = new Date(wp.startDate);
+        start.setHours(0, 0, 0, 0);
+        return start > today;
+      }
+    );
+
+    if (!nextWeekExists) {
+      updatedPreferences.push({
+        preferences: defaultPreferences,
+        startDate: nextSunday,
+        endDate: nextSundayEnd,
+        accepted: false,
+      });
+      needsUpdate = true;
     }
-    return nextWeekRecipePreferences;
-  }, [weeklyRecipePreferences]);
+
+    if (needsUpdate) {
+      setWeeklyRecipePreferences(updatedPreferences);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   const [receipeEatenEvents, setReceipeEatenEvents] = useState<ReceipeMadeEvent[]>(() => {
     const savedReceipeEatenEvents = localStorage.getItem('receipeEatenEvents') || '[]';
-    return JSON.parse(savedReceipeEatenEvents);
+    const parsed = JSON.parse(savedReceipeEatenEvents);
+    // Convert date strings back to Date objects
+    return parsed.map((event: any) => ({
+      ...event,
+      dateEaten: new Date(event.dateEaten),
+    }));
   });
   useEffect(() => {
     localStorage.setItem('receipeEatenEvents', JSON.stringify(receipeEatenEvents));
@@ -85,6 +150,7 @@ export default function HomeCooking() {
   };
 
   const handleMarkAsEaten = (recipeId: string) => {
+    console.log('handleMarkAsEaten', recipeId);
     setReceipeEatenEvents([...receipeEatenEvents, { recipeId, dateEaten: new Date() }]);
     setCurrentView('home');
     setSelectedRecipe(null);

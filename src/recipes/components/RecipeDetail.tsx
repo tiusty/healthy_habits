@@ -9,7 +9,8 @@ interface RecipeDetailProps {
 }
 
 export default function RecipeDetail({ recipe, receipeEatenEvents, onClose, onDelete, onMarkAsEaten }: RecipeDetailProps) {
-  const latestEatenEvent = receipeEatenEvents.find(event => event.recipeId === recipe.id);
+  const receiptEatenEvents = receipeEatenEvents.filter(event => event.recipeId === recipe.id).sort((a, b) => b.dateEaten.getTime() - a.dateEaten.getTime());
+  const latestEatenEvent = receiptEatenEvents.length > 0 ? receiptEatenEvents[0] : null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
