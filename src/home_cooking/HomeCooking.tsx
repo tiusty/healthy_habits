@@ -6,7 +6,7 @@ import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
 import WeeklyPreferences from './components/preferences/WeeklyPreferences';
 import { calculateNextMonday } from './helpers';
-import Preferences from './components/preferences/Preferences';
+import Preferences from './components/preferences/PreferencesEditor';
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
