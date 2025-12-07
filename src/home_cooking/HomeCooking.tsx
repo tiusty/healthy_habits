@@ -37,6 +37,7 @@ export default function HomeCooking() {
 
   const [weeklyRecipePreferences, setWeeklyRecipePreferences] = useState<WeeklyRecipePreferences[]>(() => {
     const saved = localStorage.getItem('weeklyRecipePreferences');
+    console.log('saved', saved);
     if (saved) {
       try {
         return parseWeeklyPreferences(saved);
@@ -47,6 +48,7 @@ export default function HomeCooking() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextMonday = calculateNextMonday(today);
+    console.log('nextMonday', nextMonday);
     return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, accepted: false }];
   });
 
