@@ -5,6 +5,7 @@ import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
 import Preferences from './Preferences';
+import WeeklyPreferences from './components/WeeklyPreferences';
 
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
@@ -86,7 +87,6 @@ export default function HomeCooking() {
       preferences: defaultPreferences,
       startDate: nextMonday,
       endDate: nextMondayEnd,
-      accepted: false,
     };
 
     // Add to the list
@@ -153,9 +153,9 @@ export default function HomeCooking() {
 
   if (currentView === 'upcoming') {
     return (
-      <Preferences
-        preferences={upcomingRecipePreferences.preferences}
-        onSave={(newPreferences) => {
+      <WeeklyPreferences
+        weeklyPreferences={upcomingRecipePreferences}
+        onSave={(updatedWeeklyPreferences) => {
           // Update the upcoming preferences in the weeklyRecipePreferences array
           const updated = weeklyRecipePreferences.map(wp => {
             const today = new Date();
@@ -164,7 +164,7 @@ export default function HomeCooking() {
             const wpStart = new Date(wp.startDate);
             wpStart.setHours(0, 0, 0, 0);
             if (wpStart.getTime() === nextMonday.getTime()) {
-              return { ...wp, preferences: newPreferences };
+              return updatedWeeklyPreferences;
             }
             return wp;
           });
