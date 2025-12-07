@@ -49,7 +49,6 @@ export interface WeeklyRecipePreferences {
   preferences: RecipePreferences;
   startDate: Date; // The start date for the week that the preferences apply to.
   endDate: Date; // The end date for the week that the preferences apply to.
-  accepted: boolean; // Whether the user has accepted the preferences. This is used to determine if the preferences
 }
 
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
