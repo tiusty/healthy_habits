@@ -5,7 +5,7 @@ import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
 import Preferences from './components/preferences/Preferences';
-import WeeklyPreferences from './components/WeeklyPreferences';
+import WeeklyPreferences from './components/preferences/WeeklyPreferences';
 import { calculateNextMonday } from './helpers';
 
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';

@@ -1,5 +1,5 @@
-import { WeeklyRecipePreferences, Recipe } from '../types';
-import Preferences from './preferences/Preferences';
+import { WeeklyRecipePreferences, Recipe } from '../../types';
+import Preferences from './Preferences';
 
 interface WeeklyPreferencesProps {
   weeklyPreferences: WeeklyRecipePreferences;
