@@ -49,6 +49,8 @@ export default function WeeklyPreferences({
 
         <div className="bg-white rounded-lg border border-gray-200">
           <Preferences
+            title="Weekly Preferences"
+            description="This is your weekly preferences. You can change the preferences for the upcoming week."
             preferences={weeklyPreferences.preferences}
             onSave={handlePreferencesSave}
             recipes={recipes}

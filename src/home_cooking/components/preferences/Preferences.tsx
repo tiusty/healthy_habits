@@ -6,9 +6,11 @@ interface PreferencesProps {
   onSave: (preferences: RecipePreferences) => void;
   recipes: Recipe[];
   onCancel: () => void;
+  title: string;
+  description: string;
 }
 
-export default function Preferences({ preferences, onSave, recipes, onCancel }: PreferencesProps) {
+export default function Preferences({ preferences, onSave, recipes, onCancel, title, description }: PreferencesProps) {
   const [localPreferences, setLocalPreferences] = useState<RecipePreferences>(preferences);
 
   const availableTags = useMemo(() => {
@@ -86,8 +88,8 @@ export default function Preferences({ preferences, onSave, recipes, onCancel }: 
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Recipe Preferences</h1>
-            <p className="text-gray-600">This is your default weekly preferences. Your upcoming week preferences can be changed.</p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">{title}</h1>
+            <p className="text-gray-600">{description}</p>
           </div>
           <button onClick={handleCancel} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300">← Back</button>
         </div>

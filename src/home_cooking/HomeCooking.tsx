@@ -4,10 +4,9 @@ import { defaultPreferences } from './components/preferences/defaultPreferences'
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
-import Preferences from './components/preferences/Preferences';
 import WeeklyPreferences from './components/preferences/WeeklyPreferences';
 import { calculateNextMonday } from './helpers';
-
+import Preferences from './components/preferences/Preferences';
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
@@ -132,8 +131,10 @@ export default function HomeCooking() {
   if (currentView === 'preferences') {
     return (
       <Preferences
+        title="Recipe Preferences"
+        description="This is your default weekly preferences. Your upcoming week preferences can be changed."
         preferences={preferences}
-        onSave={(newPreferences) => {
+        onSave={(newPreferences: RecipePreferences) => {
           setPreferences(newPreferences);
           setCurrentView('home');
         }}
