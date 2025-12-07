@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Recipe, RecipePreferences, ReceipeMadeEvent, WeeklyRecipePreferences } from './types';
 import { defaultPreferences } from './defaultPreferences';
 import RecipeCard from './components/RecipeCard';
@@ -6,7 +6,7 @@ import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
 import Preferences from './Preferences';
 
-type View = 'home' | 'add' | 'detail' | 'history' | 'preferences';
+type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
@@ -24,9 +24,9 @@ export default function HomeCooking() {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   }, [preferences]);
   // Helper function to calculate next Sunday from a given date
-  const calculateNextSunday = (fromDate: Date): Date => {
+  const calculateNextMonday = (fromDate: Date): Date => {
     const dayOfWeek = fromDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const daysToAdd = dayOfWeek === 0 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
+    const daysToAdd = dayOfWeek === 1 ? 7 : (7 - dayOfWeek); // If Sunday, add 7; otherwise add days to reach next Sunday
     const nextSunday = new Date(fromDate);
     nextSunday.setDate(fromDate.getDate() + daysToAdd);
     nextSunday.setHours(0, 0, 0, 0); // Set to start of day
@@ -54,70 +54,46 @@ export default function HomeCooking() {
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const nextSunday = calculateNextSunday(today);
-    return [{ preferences: defaultPreferences, startDate: today, endDate: nextSunday, accepted: false }];
+    const nextMonday = calculateNextMonday(today);
+    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, accepted: false }];
   });
 
   useEffect(() => {
     localStorage.setItem('weeklyRecipePreferences', JSON.stringify(weeklyRecipePreferences));
   }, [weeklyRecipePreferences]);
 
-  // Initialize weekly preferences if needed - moved to useEffect to avoid infinite loops
-  useEffect(() => {
+  // Variable that checks if upcoming recipe preferences exist, creates them if needed, and returns a reference
+  const upcomingRecipePreferences = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const nextSunday = calculateNextSunday(today);
-    const nextSundayEnd = new Date(nextSunday);
-    nextSundayEnd.setDate(nextSundayEnd.getDate() + 7);
+    const nextMonday = calculateNextMonday(today);
+    
+    // Check if upcoming preferences already exist
+    const existing = weeklyRecipePreferences.find(wp => {
+      const start = new Date(wp.startDate);
+      start.setHours(0, 0, 0, 0);
+      return start.getTime() === nextMonday.getTime();
+    });
 
-    let needsUpdate = false;
-    let updatedPreferences = [...weeklyRecipePreferences];
-
-    // Check if current week preferences exist
-    const currentExists = updatedPreferences.some(
-      wp => {
-        const start = new Date(wp.startDate);
-        const end = new Date(wp.endDate);
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-        return start <= today && end >= today;
-      }
-    );
-
-    if (!currentExists) {
-      updatedPreferences.push({
-        preferences: defaultPreferences,
-        startDate: today,
-        endDate: nextSunday,
-        accepted: false,
-      });
-      needsUpdate = true;
+    if (existing) {
+      return existing;
     }
 
-    // Check if next week preferences exist
-    const nextWeekExists = updatedPreferences.some(
-      wp => {
-        const start = new Date(wp.startDate);
-        start.setHours(0, 0, 0, 0);
-        return start > today;
-      }
-    );
+    // If not found, create it
+    const nextMondayEnd = new Date(nextMonday);
+    nextMondayEnd.setDate(nextMondayEnd.getDate() + 7);
+    const newUpcomingPreferences: WeeklyRecipePreferences = {
+      preferences: defaultPreferences,
+      startDate: nextMonday,
+      endDate: nextMondayEnd,
+      accepted: false,
+    };
 
-    if (!nextWeekExists) {
-      updatedPreferences.push({
-        preferences: defaultPreferences,
-        startDate: nextSunday,
-        endDate: nextSundayEnd,
-        accepted: false,
-      });
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      setWeeklyRecipePreferences(updatedPreferences);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+    // Add to the list
+    setWeeklyRecipePreferences([...weeklyRecipePreferences, newUpcomingPreferences]);
+    
+    return newUpcomingPreferences;
+  }, [weeklyRecipePreferences]);
 
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -167,6 +143,32 @@ export default function HomeCooking() {
         preferences={preferences}
         onSave={(newPreferences) => {
           setPreferences(newPreferences);
+          setCurrentView('home');
+        }}
+        recipes={recipes}
+        onCancel={() => setCurrentView('home')}
+      />
+    );
+  }
+
+  if (currentView === 'upcoming') {
+    return (
+      <Preferences
+        preferences={upcomingRecipePreferences.preferences}
+        onSave={(newPreferences) => {
+          // Update the upcoming preferences in the weeklyRecipePreferences array
+          const updated = weeklyRecipePreferences.map(wp => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const nextMonday = calculateNextMonday(today);
+            const wpStart = new Date(wp.startDate);
+            wpStart.setHours(0, 0, 0, 0);
+            if (wpStart.getTime() === nextMonday.getTime()) {
+              return { ...wp, preferences: newPreferences };
+            }
+            return wp;
+          });
+          setWeeklyRecipePreferences(updated);
           setCurrentView('home');
         }}
         recipes={recipes}
@@ -247,16 +249,25 @@ export default function HomeCooking() {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Home Cooking</h1>
             <p className="text-gray-600">Discover, cook, and track your favorite recipes</p>
           </div>
-          <button
-            onClick={() => setCurrentView('preferences')}
-            className="p-3 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg border border-gray-300"
-            title="Preferences"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentView('upcoming')}
+              className="px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg border border-gray-300 text-sm font-medium"
+              title="Upcoming Preferences"
+            >
+              Next Week Preferences
+            </button>
+            <button
+              onClick={() => setCurrentView('preferences')}
+              className="p-3 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg border border-gray-300"
+              title="Preferences"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-3 mb-8">
