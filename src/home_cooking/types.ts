@@ -45,6 +45,15 @@ export interface RecipePreferences {
   dietaryTags: string[]; // e.g., 'vegetarian', 'healthy', etc.
 }
 
+export interface WeeklyRecipePreferences {
+  preferences: RecipePreferences;
+  startDate: Date; // The start date for the week that the preferences apply to.
+  endDate: Date; // The end date for the week that the preferences apply to.
+  generatedRecipes: Recipe[]; // Recipes that have been generated for the week. This will only be generated once the weekly preferences are within the time range.
+  /** If false, this is a historical record; only one entry per week should have isActive true. Omitted = true for backward compatibility. */
+  isActive?: boolean;
+}
+
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 export const availableDifficultyLevels: DifficultyLevel[] = ['Easy', 'Medium', 'Hard'];
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 
 // Mock the HomeCooking component to avoid complex dependencies
-vi.mock('./recipes/HomeCooking', () => ({
+vi.mock('./home_cooking/HomeCooking', () => ({
   default: () => <div data-testid="home-cooking">Home Cooking Component</div>,
 }));
 
