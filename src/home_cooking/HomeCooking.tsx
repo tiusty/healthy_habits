@@ -8,6 +8,7 @@ import WeeklyPreferences from './components/preferences/WeeklyPreferences';
 import { calculateNextMonday } from './helpers';
 import Preferences from './components/preferences/PreferencesEditor';
 import { generateRecipes } from './components/preferences/generateReceipes';
+import { getDefaultRecipes } from './defaultRecipes';
 type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
 
 export default function HomeCooking() {
@@ -154,6 +155,12 @@ export default function HomeCooking() {
   const handleAddRecipe = (recipe: Recipe) => {
     setRecipes([recipe, ...recipes]);
     setCurrentView('home');
+  };
+
+  /** Load 10 sample recipes for testing/iterating. Each click adds 10 more with unique IDs. */
+  const handleLoadSampleRecipes = () => {
+    const sampleRecipes = getDefaultRecipes();
+    setRecipes([...sampleRecipes, ...recipes]);
   };
 
   if (currentView === 'preferences') {
@@ -303,6 +310,13 @@ export default function HomeCooking() {
             className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-lg border border-gray-300"
           >
             Recipe History
+          </button>
+          <button
+            onClick={handleLoadSampleRecipes}
+            className="px-6 py-3 bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold rounded-lg border border-amber-300"
+            title="Load 10 sample recipes for testing"
+          >
+            Load 10 sample recipes
           </button>
         </div>
 
