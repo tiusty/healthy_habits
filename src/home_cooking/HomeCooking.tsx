@@ -5,11 +5,11 @@ import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
 import WeeklyPreferences from './components/preferences/WeeklyPreferences';
-import { calculateNextMonday } from './helpers';
+import { calculateNextMonday, startOfWeek, endOfWeek, isMonday, daysBetween, daysLeftInWeek, servingsLeftForWeek, recipesLeftForWeek } from './helpers';
 import Preferences from './components/preferences/PreferencesEditor';
 import { generateRecipes } from './components/preferences/generateReceipes';
 import { getDefaultRecipes } from './defaultRecipes';
-type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming';
+type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming' | 'current';
 
 export default function HomeCooking() {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
@@ -34,6 +34,7 @@ export default function HomeCooking() {
       ...wp,
       startDate: new Date(wp.startDate),
       endDate: new Date(wp.endDate),
+      isActive: wp.isActive !== false,
     }));
   };
 
@@ -48,35 +49,87 @@ export default function HomeCooking() {
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const nextMonday = calculateNextMonday(today);
-    console.log('nextMonday', nextMonday);
-    return [{ preferences: defaultPreferences, startDate: today, endDate: nextMonday, generatedRecipes: [] }];
+    const weekStart = startOfWeek(today);
+    const weekEnd = endOfWeek(today);
+    return [{ preferences: defaultPreferences, startDate: weekStart, endDate: weekEnd, generatedRecipes: [], isActive: true }];
   });
 
   useEffect(() => {
     localStorage.setItem('weeklyRecipePreferences', JSON.stringify(weeklyRecipePreferences));
   }, [weeklyRecipePreferences]);
 
+  // Current week: only the active entry for the date range that contains today
   const currentWeeklyRecipePreferences = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return weeklyRecipePreferences.find(wp => {
+      if (wp.isActive === false) return false;
       const start = new Date(wp.startDate);
       const end = new Date(wp.endDate);
       start.setHours(0, 0, 0, 0);
       end.setHours(0, 0, 0, 0);
-      return start <= today && end >= today;
+      return start.getTime() <= today.getTime() && end.getTime() >= today.getTime();
     });
   }, [weeklyRecipePreferences]);
 
-  // Variable that checks if upcoming recipe preferences exist, creates them if needed, and returns a reference
+  // Ensure we always have a current-week entry (e.g. after load from storage that only had next week)
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekStart = startOfWeek(today);
+    const weekEnd = endOfWeek(today);
+
+    if (!currentWeeklyRecipePreferences) {
+      const newEntry: WeeklyRecipePreferences = {
+        preferences: defaultPreferences,
+        startDate: weekStart,
+        endDate: weekEnd,
+        generatedRecipes: [],
+        isActive: true,
+      };
+      setWeeklyRecipePreferences(prev => [newEntry, ...prev]);
+      return;
+    }
+
+    // Migrate when: week is too short (e.g. old today→nextMonday) OR start is not Monday (should always be start of week)
+    const currentStart = new Date(currentWeeklyRecipePreferences.startDate);
+    const currentEnd = new Date(currentWeeklyRecipePreferences.endDate);
+    currentStart.setHours(0, 0, 0, 0);
+    currentEnd.setHours(0, 0, 0, 0);
+    const currentTotalDays = daysBetween(currentStart, currentEnd);
+    const startsOnMonday = isMonday(currentStart);
+    if (currentTotalDays >= 7 && startsOnMonday) return;
+
+    const newEntry: WeeklyRecipePreferences = {
+      ...currentWeeklyRecipePreferences,
+      startDate: weekStart,
+      endDate: weekEnd,
+      generatedRecipes: [],
+      isActive: true,
+    };
+    const currentStartTime = currentStart.getTime();
+    const currentEndTime = currentEnd.getTime();
+    setWeeklyRecipePreferences(prev => [
+      newEntry,
+      ...prev.map(wp => {
+        const wpStart = new Date(wp.startDate).getTime();
+        const wpEnd = new Date(wp.endDate).getTime();
+        if (wpStart === currentStartTime && wpEnd === currentEndTime && wp.isActive !== false) {
+          return { ...wp, isActive: false };
+        }
+        return wp;
+      }),
+    ]);
+  }, [currentWeeklyRecipePreferences]);
+
+  // Upcoming week: active entry for next Monday's week (create if missing)
   const upcomingRecipePreferences = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextMonday = calculateNextMonday(today);
     
-    // Check if upcoming preferences already exist
     const existing = weeklyRecipePreferences.find(wp => {
+      if (wp.isActive === false) return false;
       const start = new Date(wp.startDate);
       start.setHours(0, 0, 0, 0);
       return start.getTime() === nextMonday.getTime();
@@ -86,7 +139,6 @@ export default function HomeCooking() {
       return existing;
     }
 
-    // If not found, create it
     const nextMondayEnd = new Date(nextMonday);
     nextMondayEnd.setDate(nextMondayEnd.getDate() + 7);
     const newUpcomingPreferences: WeeklyRecipePreferences = {
@@ -94,25 +146,44 @@ export default function HomeCooking() {
       startDate: nextMonday,
       endDate: nextMondayEnd,
       generatedRecipes: [],
+      isActive: true,
     };
 
-    // Add to the list
     setWeeklyRecipePreferences([...weeklyRecipePreferences, newUpcomingPreferences]);
-    
     return newUpcomingPreferences;
   }, [weeklyRecipePreferences]);
 
+  // Generate recipes for current week when none yet. Mid-week: use servings/recipes left based on days left.
   useEffect(() => {
-    if (currentWeeklyRecipePreferences && currentWeeklyRecipePreferences.generatedRecipes.length === 0) {
-      const generatedRecipes = generateRecipes(currentWeeklyRecipePreferences, recipes);
-      const updated = weeklyRecipePreferences.map(wp => {
-        if (wp.startDate === currentWeeklyRecipePreferences.startDate && wp.endDate === currentWeeklyRecipePreferences.endDate) {
-          return { ...wp, generatedRecipes };
-        }
-        return wp;
-      });
-      setWeeklyRecipePreferences(updated);
-    }
+    if (!currentWeeklyRecipePreferences || currentWeeklyRecipePreferences.generatedRecipes.length > 0) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(currentWeeklyRecipePreferences.startDate);
+    const end = new Date(currentWeeklyRecipePreferences.endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    const totalDays = daysBetween(start, end);
+    const daysLeft = daysLeftInWeek(today, end);
+    const prefs = currentWeeklyRecipePreferences.preferences;
+    const overrides =
+      daysLeft < totalDays && totalDays > 0
+        ? {
+            minServings: servingsLeftForWeek(daysLeft, totalDays, prefs.numOfServingsPerWeek.min),
+            numberOfRecipes: recipesLeftForWeek(daysLeft, totalDays, prefs.numberOfReceipesPerWeek),
+          }
+        : undefined;
+    const generatedRecipes = generateRecipes(currentWeeklyRecipePreferences, recipes, overrides);
+    const currentStart = new Date(currentWeeklyRecipePreferences.startDate).getTime();
+    const currentEnd = new Date(currentWeeklyRecipePreferences.endDate).getTime();
+    const updated = weeklyRecipePreferences.map(wp => {
+      const wpStart = new Date(wp.startDate).getTime();
+      const wpEnd = new Date(wp.endDate).getTime();
+      if (wpStart === currentStart && wpEnd === currentEnd && wp.isActive !== false) {
+        return { ...wp, generatedRecipes };
+      }
+      return wp;
+    });
+    setWeeklyRecipePreferences(updated);
   }, [currentWeeklyRecipePreferences, recipes]);
 
   const [currentView, setCurrentView] = useState<View>('home');
@@ -179,26 +250,103 @@ export default function HomeCooking() {
     );
   }
 
-  if (currentView === 'upcoming') {
+  // Save weekly preferences by creating a new active entry and deactivating the previous one (keep history)
+  const saveCurrentWeek = (updated: WeeklyRecipePreferences) => {
+    // This week always starts Monday and ends Sunday (normalize in case of stale data)
+    const weekStart = startOfWeek(updated.startDate);
+    const weekEnd = endOfWeek(updated.startDate);
+    const newEntry: WeeklyRecipePreferences = {
+      ...updated,
+      startDate: weekStart,
+      endDate: weekEnd,
+      isActive: true,
+    };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+    const updatedList = weeklyRecipePreferences.map(wp => {
+      if (wp.isActive === false) return wp;
+      const start = new Date(wp.startDate);
+      const end = new Date(wp.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      const inRange = start.getTime() <= todayTime && end.getTime() >= todayTime;
+      if (inRange) return { ...wp, isActive: false };
+      return wp;
+    });
+    setWeeklyRecipePreferences([newEntry, ...updatedList]);
+    setCurrentView('home');
+  };
+
+  const saveUpcomingWeek = (updated: WeeklyRecipePreferences) => {
+    const newEntry: WeeklyRecipePreferences = { ...updated, isActive: true };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextMonday = calculateNextMonday(today);
+    const updatedList = weeklyRecipePreferences.map(wp => {
+      const wpStart = new Date(wp.startDate);
+      wpStart.setHours(0, 0, 0, 0);
+      if (wpStart.getTime() === nextMonday.getTime() && wp.isActive !== false) {
+        return { ...wp, isActive: false };
+      }
+      return wp;
+    });
+    setWeeklyRecipePreferences([newEntry, ...updatedList]);
+    setCurrentView('home');
+  };
+
+  if (currentView === 'current') {
+    if (!currentWeeklyRecipePreferences) {
+      return (
+        <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+          <p className="text-gray-600">Setting up this week…</p>
+        </div>
+      );
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(currentWeeklyRecipePreferences.endDate);
+    end.setHours(0, 0, 0, 0);
+    const totalDays = daysBetween(currentWeeklyRecipePreferences.startDate, currentWeeklyRecipePreferences.endDate);
+    const daysLeft = daysLeftInWeek(today, end);
     return (
       <WeeklyPreferences
-        weeklyPreferences={upcomingRecipePreferences}
-        onSave={(updatedWeeklyPreferences) => {
-          // Update the upcoming preferences in the weeklyRecipePreferences array
+        weeklyPreferences={currentWeeklyRecipePreferences}
+        onSave={saveCurrentWeek}
+        recipes={recipes}
+        onCancel={() => setCurrentView('home')}
+        isCurrentWeek
+        weekContext={{ daysLeft, totalDays }}
+        onRegenerate={() => {
+          const overrides =
+            daysLeft < totalDays && totalDays > 0
+              ? {
+                  minServings: servingsLeftForWeek(daysLeft, totalDays, currentWeeklyRecipePreferences.preferences.numOfServingsPerWeek.min),
+                  numberOfRecipes: recipesLeftForWeek(daysLeft, totalDays, currentWeeklyRecipePreferences.preferences.numberOfReceipesPerWeek),
+                }
+              : undefined;
+          const generatedRecipes = generateRecipes(currentWeeklyRecipePreferences, recipes, overrides);
+          const currentStart = new Date(currentWeeklyRecipePreferences.startDate).getTime();
+          const currentEnd = new Date(currentWeeklyRecipePreferences.endDate).getTime();
           const updated = weeklyRecipePreferences.map(wp => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const nextMonday = calculateNextMonday(today);
-            const wpStart = new Date(wp.startDate);
-            wpStart.setHours(0, 0, 0, 0);
-            if (wpStart.getTime() === nextMonday.getTime()) {
-              return updatedWeeklyPreferences;
+            const wpStart = new Date(wp.startDate).getTime();
+            const wpEnd = new Date(wp.endDate).getTime();
+            if (wpStart === currentStart && wpEnd === currentEnd && wp.isActive !== false) {
+              return { ...wp, generatedRecipes };
             }
             return wp;
           });
           setWeeklyRecipePreferences(updated);
-          setCurrentView('home');
         }}
+      />
+    );
+  }
+
+  if (currentView === 'upcoming') {
+    return (
+      <WeeklyPreferences
+        weeklyPreferences={upcomingRecipePreferences}
+        onSave={saveUpcomingWeek}
         recipes={recipes}
         onCancel={() => setCurrentView('home')}
       />
@@ -278,6 +426,13 @@ export default function HomeCooking() {
             <p className="text-gray-600">Discover, cook, and track your favorite recipes</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentView('current')}
+              className="px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg border border-gray-300 text-sm font-medium"
+              title="This week's preferences"
+            >
+              This Week Preferences
+            </button>
             <button
               onClick={() => setCurrentView('upcoming')}
               className="px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg border border-gray-300 text-sm font-medium"

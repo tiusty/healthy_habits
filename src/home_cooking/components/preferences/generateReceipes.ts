@@ -1,14 +1,23 @@
 import { Recipe, WeeklyRecipePreferences } from '../../types';
 
+export interface GenerateRecipesOverrides {
+  /** Override min servings (e.g. mid-week: servings left for the week). */
+  minServings?: number;
+  /** Override number of recipes to plan (e.g. mid-week: recipes left). */
+  numberOfRecipes?: number;
+}
+
 /**
  * Filters recipes based on the criteria specified in weekly preferences
  * @param weeklyPreferences The weekly preferences containing filter criteria
  * @param availableRecipes The list of all available recipes to filter from
+ * @param overrides Optional overrides for mid-week: minServings and/or numberOfRecipes
  * @returns An array of recipes that match the criteria
  */
 export function generateRecipes(
   weeklyPreferences: WeeklyRecipePreferences,
-  availableRecipes: Recipe[]
+  availableRecipes: Recipe[],
+  overrides?: GenerateRecipesOverrides
 ): Recipe[] {
   const { preferences } = weeklyPreferences;
 
@@ -56,13 +65,10 @@ export function generateRecipes(
     );
   });
 
-  // Step 2: Select exactly numberOfReceipesPerWeek recipes where total servings >= minServings
-  // We need to find a combination of recipes where:
-  // - Number of recipes matches numberOfReceipesPerWeek (or fewer if not enough available)
-  // - Total servings sum is at least numOfServingsPerWeek.min
-
-  const targetRecipeCount = preferences.numberOfReceipesPerWeek;
-  const minServings = preferences.numOfServingsPerWeek.min;
+  // Step 2: Select exactly targetRecipeCount recipes where total servings >= minServings
+  // Use overrides when provided (e.g. mid-week: servings/recipes left for the week)
+  const targetRecipeCount = overrides?.numberOfRecipes ?? preferences.numberOfReceipesPerWeek;
+  const minServings = overrides?.minServings ?? preferences.numOfServingsPerWeek.min;
 
   // If no recipes match the criteria, return empty array
   if (filteredRecipes.length === 0) {

@@ -1,11 +1,20 @@
 import { WeeklyRecipePreferences, Recipe } from '../../types';
 import Preferences from './PreferencesEditor';
 
+export interface WeekContext {
+  daysLeft: number;
+  totalDays: number;
+}
+
 interface WeeklyPreferencesProps {
   weeklyPreferences: WeeklyRecipePreferences;
   onSave: (weeklyPreferences: WeeklyRecipePreferences) => void;
   recipes: Recipe[];
   onCancel: () => void;
+  /** When true, show "Regenerate recipes" and pass weekContext for servings-left display */
+  isCurrentWeek?: boolean;
+  weekContext?: WeekContext;
+  onRegenerate?: () => void;
 }
 
 export default function WeeklyPreferences({
@@ -13,11 +22,15 @@ export default function WeeklyPreferences({
   onSave,
   recipes,
   onCancel,
+  isCurrentWeek,
+  weekContext,
+  onRegenerate,
 }: WeeklyPreferencesProps) {
   const handlePreferencesSave = (newPreferences: WeeklyRecipePreferences['preferences']) => {
     onSave({
       ...weeklyPreferences,
       preferences: newPreferences,
+      generatedRecipes: [], // new snapshot will regenerate on next load
     });
   };
 
@@ -47,14 +60,31 @@ export default function WeeklyPreferences({
           </div>
         </div>
 
+        {isCurrentWeek && onRegenerate && (
+          <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Recipes for this week</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Change preferences above if needed, then regenerate to get a new set of recipes based on days left in the week.
+            </p>
+            <button
+              type="button"
+              onClick={onRegenerate}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
+            >
+              Regenerate recipes for this week
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg border border-gray-200">
           <Preferences
             title="Weekly Preferences"
-            description="This is your weekly preferences. You can change the preferences for the upcoming week."
+            description={isCurrentWeek ? "Edit preferences for this week. Save to create a new snapshot, then regenerate recipes if needed." : "This is your weekly preferences. You can change the preferences for the upcoming week."}
             preferences={weeklyPreferences.preferences}
             onSave={handlePreferencesSave}
             recipes={recipes}
             onCancel={onCancel}
+            weekContext={weekContext}
           />
         </div>
       </div>
