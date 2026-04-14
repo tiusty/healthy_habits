@@ -13,8 +13,9 @@ type View = 'home' | 'add' | 'detail' | 'history' | 'preferences' | 'upcoming' |
 
 export default function HomeCooking() {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const savedRecipes = localStorage.getItem('recipes') || '[]';
-    return JSON.parse(savedRecipes);
+    const saved = localStorage.getItem('recipes');
+    if (saved) return JSON.parse(saved);
+    return getDefaultRecipes();
   });
   useEffect(() => {
     localStorage.setItem('recipes', JSON.stringify(recipes));
