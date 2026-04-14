@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Preferences from './Preferences';
-import { RecipePreferences, Recipe } from './types';
+import Preferences from './PreferencesEditor';
+import { RecipePreferences, Recipe } from '../../types';
 import { defaultPreferences } from './defaultPreferences';
 
 // Mock window.confirm
@@ -47,7 +47,7 @@ describe('Preferences', () => {
 
   describe('Toggle Functionality', () => {
     it('toggles meal type - adds when not selected, removes when selected', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const snackButton = screen.getByRole('button', { name: 'snack' });
       const breakfastButton = screen.getByRole('button', { name: 'breakfast' });
@@ -62,7 +62,7 @@ describe('Preferences', () => {
     });
 
     it('toggles protein type - adds when not selected, removes when selected', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const otherButton = screen.getByRole('button', { name: 'other' });
       const chickenButton = screen.getByRole('button', { name: 'chicken' });
@@ -82,7 +82,7 @@ describe('Preferences', () => {
         difficultyLevels: ['Easy'],
       };
 
-      render(<Preferences {...defaultProps} preferences={preferences} />);
+      render(<Preferences {...defaultProps} preferences={preferences} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const mediumButton = screen.getByRole('button', { name: 'Medium' });
       const easyButton = screen.getByRole('button', { name: 'Easy' });
@@ -97,7 +97,7 @@ describe('Preferences', () => {
     });
 
     it('toggles dietary tags - adds when not selected, removes when selected', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const healthyButton = screen.getByRole('button', { name: 'healthy' });
       const quickButton = screen.getByRole('button', { name: 'quick' });
@@ -118,7 +118,7 @@ describe('Preferences', () => {
 
   describe('Save Functionality', () => {
     it('calls onSave with updated preferences when save is clicked', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       // Make a change by toggling a meal type
       const snackButton = screen.getByRole('button', { name: 'snack' });
@@ -133,14 +133,14 @@ describe('Preferences', () => {
     });
 
     it('save button is disabled when there are no changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const saveButton = screen.getByText('Save Preferences');
       expect(saveButton.hasAttribute('disabled')).toBe(true);
     });
 
     it('save button is enabled when there are changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const snackButton = screen.getByRole('button', { name: 'snack' });
       fireEvent.click(snackButton);
@@ -152,7 +152,7 @@ describe('Preferences', () => {
 
   describe('Reset Functionality', () => {
     it('resets preferences to original values when reset is clicked', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       // Make changes
       const snackButton = screen.getByRole('button', { name: 'snack' });
@@ -175,14 +175,14 @@ describe('Preferences', () => {
     });
 
     it('reset button is disabled when there are no changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const resetButton = screen.getByText('Reset');
       expect(resetButton.hasAttribute('disabled')).toBe(true);
     });
 
     it('reset button is enabled when there are changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const snackButton = screen.getByRole('button', { name: 'snack' });
       fireEvent.click(snackButton);
@@ -194,7 +194,7 @@ describe('Preferences', () => {
 
   describe('Cancel Functionality', () => {
     it('calls onCancel when cancel is clicked with no changes', () => {
-      render(<Preferences {...defaultProps} onCancel={mockOnCancel} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const cancelButton = screen.getByText('← Back');
       fireEvent.click(cancelButton);
@@ -206,7 +206,7 @@ describe('Preferences', () => {
     it('shows confirmation dialog when cancel is clicked with unsaved changes', () => {
       mockConfirm.mockReturnValue(true);
 
-      render(<Preferences {...defaultProps} onCancel={mockOnCancel} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       // Make a change
       const snackButton = screen.getByRole('button', { name: 'snack' });
@@ -224,7 +224,7 @@ describe('Preferences', () => {
     it('does not call onCancel when user cancels confirmation dialog', () => {
       mockConfirm.mockReturnValue(false);
 
-      render(<Preferences {...defaultProps} onCancel={mockOnCancel} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       // Make a change
       const snackButton = screen.getByRole('button', { name: 'snack' });
@@ -240,7 +240,7 @@ describe('Preferences', () => {
     it('resets preferences when cancel is confirmed', () => {
       mockConfirm.mockReturnValue(true);
 
-      render(<Preferences {...defaultProps} onCancel={mockOnCancel} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       // Make changes
       const snackButton = screen.getByRole('button', { name: 'snack' });
@@ -256,7 +256,7 @@ describe('Preferences', () => {
 
   describe('Input Changes', () => {
     it('updates number of meals per week when input changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const mealsInput = screen.getByDisplayValue('2') as HTMLInputElement;
       fireEvent.change(mealsInput, { target: { value: '5' } });
@@ -265,7 +265,7 @@ describe('Preferences', () => {
     });
 
     it('updates minimum servings when input changes', () => {
-      render(<Preferences {...defaultProps} />);
+      render(<Preferences {...defaultProps} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       const servingsMinInput = screen.getByDisplayValue('5') as HTMLInputElement;
       fireEvent.change(servingsMinInput, { target: { value: '10' } });
@@ -281,7 +281,7 @@ describe('Preferences', () => {
         mealType: [],
       };
 
-      render(<Preferences {...defaultProps} preferences={preferences} />);
+      render(<Preferences {...defaultProps} preferences={preferences} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       expect(screen.getByText('No meal types selected - all meal types will be shown')).toBeTruthy();
     });
@@ -292,7 +292,7 @@ describe('Preferences', () => {
         proteinType: [],
       };
 
-      render(<Preferences {...defaultProps} preferences={preferences} />);
+      render(<Preferences {...defaultProps} preferences={preferences} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       expect(screen.getByText('No protein types selected - all protein types will be shown')).toBeTruthy();
     });
@@ -303,7 +303,7 @@ describe('Preferences', () => {
         difficultyLevels: [],
       };
 
-      render(<Preferences {...defaultProps} preferences={preferences} />);
+      render(<Preferences {...defaultProps} preferences={preferences} onCancel={mockOnCancel} title="Recipe Preferences" description="This is your default weekly preferences. Your upcoming week preferences can be changed." />);
 
       expect(screen.getByText('No difficulty levels selected - all levels will be shown')).toBeTruthy();
     });

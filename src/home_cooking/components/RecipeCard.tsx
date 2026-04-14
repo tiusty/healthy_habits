@@ -7,7 +7,8 @@ interface RecipeCardProps {
 }
 
 export default function RecipeCard({ recipe, receipeEatenEvents, onClick }: RecipeCardProps) {
-  const latestEatenEvent = receipeEatenEvents.find(event => event.recipeId === recipe.id);
+  const receiptEatenEvents = receipeEatenEvents.filter(event => event.recipeId === recipe.id).sort((a, b) => b.dateEaten.getTime() - a.dateEaten.getTime());
+  const latestEatenEvent = receiptEatenEvents.length > 0 ? receiptEatenEvents[0] : null;
   return (
     <div
       onClick={onClick}

@@ -1,4 +1,4 @@
-import { RecipePreferences } from './types';
+import { RecipePreferences } from '../../types';
 
 export const defaultPreferences: RecipePreferences = {
   numberOfReceipesPerWeek: 2,

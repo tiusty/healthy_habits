@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import HomeCooking from './recipes/HomeCooking';
+import HomeCooking from './home_cooking/HomeCooking';
 
 type Tab = 'home-cooking'; // Add more tabs here as needed
 

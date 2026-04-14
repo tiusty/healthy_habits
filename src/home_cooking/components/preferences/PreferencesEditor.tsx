@@ -1,14 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
-import { RecipePreferences, Recipe, MealType, availableMealTypes, availableProteinTypes, ProteinType, DifficultyLevel, availableDifficultyLevels } from './types';
+import { RecipePreferences, Recipe, MealType, availableMealTypes, availableProteinTypes, ProteinType, DifficultyLevel, availableDifficultyLevels } from '../../types';
+import { servingsLeftForWeek, recipesLeftForWeek } from '../../helpers';
+
+export interface WeekContext {
+  daysLeft: number;
+  totalDays: number;
+}
 
 interface PreferencesProps {
   preferences: RecipePreferences;
   onSave: (preferences: RecipePreferences) => void;
   recipes: Recipe[];
   onCancel: () => void;
+  title: string;
+  description: string;
+  /** When set (e.g. current week), show days left and servings/recipes left for the week (rounded up) */
+  weekContext?: WeekContext;
 }
 
-export default function Preferences({ preferences, onSave, recipes, onCancel }: PreferencesProps) {
+export default function Preferences({ preferences, onSave, recipes, onCancel, title, description, weekContext }: PreferencesProps) {
   const [localPreferences, setLocalPreferences] = useState<RecipePreferences>(preferences);
 
   const availableTags = useMemo(() => {
@@ -86,8 +96,8 @@ export default function Preferences({ preferences, onSave, recipes, onCancel }: 
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Recipe Preferences</h1>
-            <p className="text-gray-600">This is your default weekly preferences. Your upcoming week preferences can be changed.</p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">{title}</h1>
+            <p className="text-gray-600">{description}</p>
           </div>
           <button onClick={handleCancel} className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300">← Back</button>
         </div>
@@ -140,6 +150,23 @@ export default function Preferences({ preferences, onSave, recipes, onCancel }: 
 
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Servings For the Week</h2>
+            {weekContext && weekContext.totalDays > 0 && (
+              <div className="mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="text-sm font-medium text-indigo-900 mb-1">Days left in week</div>
+                <div className="text-lg text-indigo-800">
+                  {weekContext.daysLeft} of {weekContext.totalDays} days
+                </div>
+                <div className="mt-2 text-sm text-indigo-700">
+                  Servings for full week: {localPreferences.numOfServingsPerWeek.min}–{localPreferences.numOfServingsPerWeek.max}
+                </div>
+                <div className="mt-1 text-sm font-medium text-indigo-800">
+                  Servings left (this week, rounded up): {servingsLeftForWeek(weekContext.daysLeft, weekContext.totalDays, localPreferences.numOfServingsPerWeek.min)}
+                </div>
+                <div className="mt-1 text-sm font-medium text-indigo-800">
+                  Recipes to plan (rounded up): {recipesLeftForWeek(weekContext.daysLeft, weekContext.totalDays, localPreferences.numberOfReceipesPerWeek)}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
