@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Recipe, RecipePreferences, ReceipeMadeEvent } from './types';
 import { defaultPreferences } from './defaultPreferences';
+import { defaultRecipes } from './defaultRecipes';
 import RecipeCard from './components/RecipeCard';
 import RecipeDetail from './components/RecipeDetail';
 import AddRecipe from './components/AddRecipe';
@@ -10,8 +11,9 @@ type View = 'home' | 'add' | 'detail' | 'history' | 'preferences';
 
 export default function HomeCooking() {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const savedRecipes = localStorage.getItem('recipes') || '[]';
-    return JSON.parse(savedRecipes);
+    const saved = localStorage.getItem('recipes');
+    if (saved) return JSON.parse(saved);
+    return defaultRecipes;
   });
   useEffect(() => {
     localStorage.setItem('recipes', JSON.stringify(recipes));
